@@ -1,101 +1,32 @@
 import React, { useEffect, useState } from 'react';
 import { Card, Row, Col, Button, Modal } from 'antd';
-import UploadFile from './components/uploadFile/uploadFile'
-import DynamicTable from './components/table/dynamicTable'
-
-const dummyData = [
-  {
-      "_id": 1,
-      "rate_id": "c1",
-      "product_code": "po1",
-      "Gender": "M,F,T",
-       "Tobacco": "Y",                   // Y if the individual uses tobacco, N otherwise
-      "Product_term": 50,
-      "variant_code": "V01",
-      "X-axis": {
-      "age": 30 // age value
-      },
-      "Y-axis": {
-      "PPT": 10 // premium per term value
-      },
-      "Premium_value": 30,
-      "From":"from Date",
-      "To": "To Date",
-      "Sheet":"name of the sheet",   // storing name of the sheet.
-      "TimeStamp":"Date()"    // for created date.
-  },
-  {
-      "_id": 2,
-      "rate_id": "c2",
-      "product_code": "po1",
-      "Gender": "M,F,T",
-       "Tobacco": "Y",                   // Y if the individual uses tobacco, N otherwise
-      "Product_term": 50,
-      "variant_code": "V01",
-      "X-axis": {
-      "age": 30 // age value
-      },
-      "Y-axis": {
-      "PPT": 10 // premium per term value
-      },
-      "Premium_value": 30,
-      "From":"from Date",
-      "To": "To Date",
-      "Sheet":"name of the sheet",   // storing name of the sheet.
-      "TimeStamp":"Date()"    // for created date.
-  },
-  {
-      "_id": 3,
-      "rate_id": "c3",
-      "product_code": "po1",
-      "Gender": "M,F,T",
-       "Tobacco": "Y",                   // Y if the individual uses tobacco, N otherwise
-      "Product_term": 50,
-      "variant_code": "V01",
-      "X-axis": {
-      "age": 30 // age value
-      },
-      "Y-axis": {
-      "PPT": 10 // premium per term value
-      },
-      "Premium_value": 30,
-      "From":"from Date",
-      "To": "To Date",
-      "Sheet":"name of the sheet",   // storing name of the sheet.
-      "TimeStamp":"Date()"    // for created date.
-  },
-  {
-      "_id": 4,
-      "rate_id": "c4",
-      "product_code": "po1",
-      "Gender": "M,F,T",
-       "Tobacco": "Y",                   // Y if the individual uses tobacco, N otherwise
-      "Product_term": 50,
-      "variant_code": "V01",
-      "X-axis": {
-      "age": 30 // age value
-      },
-      "Y-axis": {
-      "PPT": 10 // premium per term value
-      },
-      "Premium_value": 30,
-      "From":"from Date",
-      "To": "To Date",
-      "Sheet":"mame of the sheet",   // storing name of the sheet.
-      "TimeStamp":"Date()"    // for created date.
-  }
-]
+import DynamicTable from './components/table/dynamicTable';
+import axios from 'axios';
 
 const App = () => {
   const [fileArray, setFileArray] = useState([]);
 
   useEffect(() => {
-    getAllData();
+    getGridData();
   },[])
 
-  const getAllData = () => {
-    //Fetch data from get all data API
-    setFileArray(dummyData); //to be remove
+  const getGridData = async () => {
+    try {
+      const response = await axios.get('http://localhost:5000/excelupload/get_grid_record');
+      console.log(response);
+      if (response.data && response.data.data.length) {
+        const customizedData = response.data.data.map((item)=> {
+          const date = new Date(item.timestamp);
+          const formattedDate = `${date.getDate()}-${date.getMonth() + 1}-${date.getFullYear()}`;
+          console.log(formattedDate); // e.g., "9-8-2024"
+          return {...item,timestamp: formattedDate}
+        })
+        setFileArray(customizedData)
+      }
+    } catch (error) {
+      console.log(error);
+      setFileArray([]);
+    }
   }
 
   return (

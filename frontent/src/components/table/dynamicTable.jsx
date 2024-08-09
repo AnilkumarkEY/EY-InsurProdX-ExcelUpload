@@ -11,13 +11,10 @@ const DynamicTable = ({ fileArray }) => {
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [modalContent, setModalContent] = useState(null);
   const [modalTitle, setModalTitle] = useState('');
+  const [resetForm, setResetForm] = useState(false);
 
   useEffect(() => {
-    const data = fileArray.map((el, i) => ({
-      key: i,
-      name: el.Sheet,
-      age: el['X-axis'].age,
-    }));
+    const data = fileArray
     setFilteredData(data);
   }, [fileArray]);
 
@@ -25,19 +22,11 @@ const DynamicTable = ({ fileArray }) => {
     setSearchText(value);
     if (value) {
       const filtered = fileArray.filter((item) =>
-        item.Sheet.toLowerCase().includes(value.toLowerCase())
-      ).map((el, i) => ({
-        key: i,
-        name: el.Sheet,
-        age: el['X-axis'].age,
-      }));
+        item.summeryDataId.toLowerCase().includes(value.toLowerCase())
+      )
       setFilteredData(filtered);
     } else {
-      const data = fileArray.map((el, i) => ({
-        key: i,
-        name: el.Sheet,
-        age: el['X-axis'].age,
-      }));
+      const data = fileArray
       setFilteredData(data);
     }
   };
@@ -54,7 +43,7 @@ const DynamicTable = ({ fileArray }) => {
   const openRateForm = (record, type) => {
     if (type == 'viewRate') {
       setModalTitle('View premium rate')
-      setModalContent(<CalculatePremiumForm />);
+      setModalContent(<CalculatePremiumForm resetForm={true}/>);
     } else {
       setModalTitle('Upload excel file here')
       setModalContent(<UploadFile />);
@@ -72,15 +61,35 @@ const DynamicTable = ({ fileArray }) => {
 
   const columns = [
     {
-      title: 'Name',
-      dataIndex: 'name',
-      key: 'name',
+      title: 'Upload ID',
+      dataIndex: 'summeryDataId',
+      key: 'summeryDataId',
       render: (text) => <a>{text}</a>,
     },
     {
-      title: 'Age',
-      dataIndex: 'age',
-      key: 'age',
+      title: 'Total Sheet Count',
+      dataIndex: 'sheetCount',
+      key: 'sheetCount',
+    },
+    {
+      title: 'Criteria Count',
+      dataIndex: 'criteria_count',
+      key: 'criteria_count',
+    },
+    {
+      title: 'Total Record Count',
+      dataIndex: 'totalRateUploaded',
+      key: 'totalRateUploaded',
+    },
+    {
+      title: 'Uploaded Date',
+      dataIndex: 'timestamp',
+      key: 'timestamp',
+    },
+    {
+      title: 'Status',
+      dataIndex: 'status',
+      key: 'status',
     },
     {
       title: 'Action',
@@ -133,22 +142,25 @@ const DynamicTable = ({ fileArray }) => {
   );
 };
 
-const CalculatePremiumForm = () => {
+const CalculatePremiumForm = ({resetForm}) => {
+  console.log(resetForm);
+  
   const [premiumPrc, setPremiumPrc] = useState(0);
+  const [form] = Form.useForm();
+
+  useEffect(() => {
+    if (resetForm) form.resetFields();
+  },[resetForm,form]);
 
   const onFinish = async (values) => {
-    setPremiumPrc(155);
-    return;
     console.log('Success:', values);
-    //Call API here
     try {
       const {gender,tobacco,productTerm, age, ppt} = values;
       const fromDate = "2024-04-01"; //Hard coded
-      //const response = await axios.post(`http://localhost:5000/excelupload/single_premium_record?age=${age}&ppt=${ppt}&from=${fromDate}&gender=${gender}&variant_code=V01&product_term=${productTerm}&tobacco=${tobacco}`)
-      console.log(response);
+      const toDate = "2024-03-03";
+      const response = await axios.get(`http://localhost:5000/excelupload/single_premium_record?to=${toDate}age=${age}&ppt=${ppt}&from=${fromDate}&gender=${gender}&variant_code=V01&product_term=${productTerm}&tobacco=${tobacco}`)
       if (response.status == "success" && response.data) {
-        //setPremiumPrc(response.data.premium);
-        setPremiumPrc(155);
+        setPremiumPrc(response.data.premium);
       }
     } catch (error) {
       console.log(error);
