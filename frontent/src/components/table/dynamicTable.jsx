@@ -1,9 +1,20 @@
 import React, { useState, useEffect } from 'react';
-import { Space, Table, Input, Button, Modal, Dropdown, Menu, Form } from 'antd';
+import { Space, Table, Input, Button, Modal, Dropdown, Menu, Form, DatePicker } from 'antd';
 import UploadFile from '../uploadFile/uploadFile';
 import axios from 'axios';
+import { formatDate } from '../../assets/utility/common';
 
 const { Search } = Input;
+const styleAction1 = {
+  "font-weight": "700",
+  "font-size": "19px",
+  "position": "relative",
+  "bottom": "-10px"
+};
+const styleAction2 = {
+  "transform": "rotate(270deg)"
+}
+
 
 const DynamicTable = ({ fileArray }) => {
   const [searchText, setSearchText] = useState('');
@@ -31,21 +42,28 @@ const DynamicTable = ({ fileArray }) => {
     }
   };
 
-  const handleDownload = (e, record) => {
-    const jsonString = JSON.stringify(record);
-    const blob = new Blob([jsonString], { type: "application/json" });
-    const dLink = document.createElement('a');
-    dLink.download = `${record.name}.json`;
-    dLink.href = URL.createObjectURL(blob);
-    dLink.click();
+  const handleDownload = async(e, record) => {
+    try {
+      const res = await axios.get(`http://localhost:5000/excelupload/get_all_transform_record?uploadId=${record.summeryDataId}`)
+      if (res.data.status && res.data.status == 'success') {
+        const jsonString = JSON.stringify(res.data.data);
+        const blob = new Blob([jsonString], { type: "application/json" });
+        const dLink = document.createElement('a');
+        dLink.download = `${record.summeryDataId}.json`;
+        dLink.href = URL.createObjectURL(blob);
+        dLink.click();
+      }
+    } catch (error) {
+      console.log(error);
+    }
   };
 
   const openRateForm = (record, type) => {
     if (type == 'viewRate') {
-      setModalTitle('View premium rate')
+      setModalTitle('View Premium Rate')
       setModalContent(<CalculatePremiumForm resetForm={true}/>);
     } else {
-      setModalTitle('Upload excel file here')
+      setModalTitle('Upload Excel File Here')
       setModalContent(<UploadFile />);
     }
     setIsModalOpen(true);
@@ -100,15 +118,18 @@ const DynamicTable = ({ fileArray }) => {
             overlay={
               <Menu>
                 <Menu.Item key="json" onClick={(e) => handleDownload(e, record)}>
-                  <a id={record.name}>JSON</a>
+                  <a id={record.name}>Rate JSON</a>
                 </Menu.Item>
-                <Menu.Item key="text">Text</Menu.Item>
+                <Menu.Item key="text">
+                  <a onClick={() => openRateForm(record, 'viewRate')}>Premium Rate</a>
+                </Menu.Item>
               </Menu>
             }
           >
-            <a>Download</a>
+            <div style={styleAction2}>
+              <a style={styleAction1}>...</a>
+            </div>
           </Dropdown>
-          <a onClick={() => openRateForm(record, 'viewRate')}>View Rate</a>
         </Space>
       ),
     },
@@ -118,7 +139,7 @@ const DynamicTable = ({ fileArray }) => {
     <>
       <div className='search-upload'>
         <Search
-          placeholder='Search by name'
+          placeholder='Search by Upload ID'
           value={searchText}
           onChange={(e) => handleSearch(e.target.value)}
           style={{ marginBottom: 16, width: 250 }}
@@ -155,12 +176,13 @@ const CalculatePremiumForm = ({resetForm}) => {
   const onFinish = async (values) => {
     console.log('Success:', values);
     try {
-      const {gender,tobacco,productTerm, age, ppt} = values;
-      const fromDate = "2024-04-01"; //Hard coded
-      const toDate = "2024-03-03";
-      const response = await axios.get(`http://localhost:5000/excelupload/single_premium_record?to=${toDate}age=${age}&ppt=${ppt}&from=${fromDate}&gender=${gender}&variant_code=V01&product_term=${productTerm}&tobacco=${tobacco}`)
-      if (response.status == "success" && response.data) {
-        setPremiumPrc(response.data.premium);
+      const { gender,tobacco,productTerm, age, ppt, fromDate } = values;
+      const fDate = formatDate(fromDate, 'form-date');
+      const response = await axios.get(`http://localhost:5000/excelupload/single_premium_record?to=${fDate}&age=${age}&ppt=${ppt}&from=${fDate}&gender=${gender}&variant_code=V01&product_term=${productTerm}&tobacco=${tobacco}`)
+      console.log(response);
+      if (response.data.status == "success" && response.data.data) {
+        if (response.data.data.premium) setPremiumPrc(response.data.data.premium);
+        else setPremiumPrc("N/A");
       }
     } catch (error) {
       console.log(error);
@@ -268,6 +290,17 @@ const CalculatePremiumForm = ({resetForm}) => {
         <Input />
       </Form.Item>
 
+      <Form.Item label="DatePicker" name="fromDate"
+        rules={[
+          {
+            required : true,
+            message : 'This field is required!'
+          }
+        ]}
+      >
+          <DatePicker />
+      </Form.Item>
+
       <Form.Item
         wrapperCol={{
           offset: 8,
@@ -275,11 +308,11 @@ const CalculatePremiumForm = ({resetForm}) => {
         }}
       >
         <Button type="primary" htmlType="submit">
-          Submit
+          Get Premium Price
         </Button>
       </Form.Item>
       </Form>
-      <p className='center-p'>{premiumPrc ? `Premium Price is ${premiumPrc}` : ""}</p>
+      <h3 style={{"text-align" : "center", "color" : "#0080ff"}}> {premiumPrc ? `Premium Price is` : ""} &#8377; {premiumPrc ? `${premiumPrc}` : ""}</h3>
     </>
   )
 }

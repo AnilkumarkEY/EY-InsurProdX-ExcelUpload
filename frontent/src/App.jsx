@@ -2,6 +2,7 @@ import React, { useEffect, useState } from 'react';
 import { Card, Row, Col, Button, Modal } from 'antd';
 import DynamicTable from './components/table/dynamicTable';
 import axios from 'axios';
+import { formatDate } from './assets/utility/common';
 
 const App = () => {
   const [fileArray, setFileArray] = useState([]);
@@ -16,10 +17,7 @@ const App = () => {
       console.log(response);
       if (response.data && response.data.data.length) {
         const customizedData = response.data.data.map((item)=> {
-          const date = new Date(item.timestamp);
-          const formattedDate = `${date.getDate()}-${date.getMonth() + 1}-${date.getFullYear()}`;
-          console.log(formattedDate); // e.g., "9-8-2024"
-          return {...item,timestamp: formattedDate}
+          return {...item,timestamp: formatDate(item.timestamp, 'display-date-Time')}
         })
         setFileArray(customizedData)
       }
@@ -30,7 +28,7 @@ const App = () => {
   }
 
   return (
-    <Card title="Excel upload and summary">
+    <Card title="Excel Upload And Summary">
        <Row>
         <Col span={24}>
           <DynamicTable fileArray={fileArray} />
