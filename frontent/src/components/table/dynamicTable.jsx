@@ -96,8 +96,8 @@ const DynamicTable = ({ fileArray }) => {
     },
     {
       title: 'Criteria Count',
-      dataIndex: 'criteria_count',
-      key: 'criteria_count',
+      dataIndex: 'criteria_row_count',
+      key: 'criteria_row_count',
     },
     {
       title: 'Total Record Count',
