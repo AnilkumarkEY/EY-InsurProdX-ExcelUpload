@@ -1,0 +1,12 @@
+@use '@ey-xd/motif-core/src/styles/themes/design-patterns/common/fonts.css'; // (Optional) Import fonts
+@forward '@ey-xd/motif-core/src/styles'; // Import the core styles for design system
+@forward '@ey-xd/motif-react/styles'; // Import the motif-react styles
+
+.search-upload input {
+    height: 32px;
+}
+table tr td:nth-child(6) {
+    color: #03C04A;
+    font-weight: 500;
+    text-transform: capitalize;
+}

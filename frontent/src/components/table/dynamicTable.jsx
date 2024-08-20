@@ -22,7 +22,7 @@ const DynamicTable = ({ fileArray }) => {
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [modalContent, setModalContent] = useState(null);
   const [modalTitle, setModalTitle] = useState('');
-  const [resetForm, setResetForm] = useState(false);
+  const [criteria_field_Array, setCriteria_field_Array] = useState([]);
 
   useEffect(() => {
     const data = fileArray
@@ -58,23 +58,31 @@ const DynamicTable = ({ fileArray }) => {
     }
   };
 
-  const openRateForm = (record, type) => {
+  const updateCriteria = (value) => {
+    console.log(value);
+    setCriteria_field_Array(value);
+  }
+
+  const openRateForm = (record, type, criteria_field_Array, updateCriteria) => {
+    console.log(record);
     if (type == 'viewRate') {
       setModalTitle('View Premium Rate')
-      setModalContent(<CalculatePremiumForm resetForm={true}/>);
+      setModalContent(<CalculatePremiumForm resetForm={true} uploadId={record.summeryDataId} criteria_field_Array={criteria_field_Array}/>);
     } else {
       setModalTitle('Upload Excel File Here')
-      setModalContent(<UploadFile />);
+      setModalContent(<UploadFile updateCriteria={updateCriteria}/>);
     }
     setIsModalOpen(true);
   };
 
   const handleOk = () => {
     setIsModalOpen(false);
+    window.location.reload();
   };
 
   const handleCancel = () => {
     setIsModalOpen(false);
+   window.location.reload();
   };
 
   const columns = [
@@ -91,8 +99,8 @@ const DynamicTable = ({ fileArray }) => {
     },
     {
       title: 'Criteria Count',
-      dataIndex: 'criteria_count',
-      key: 'criteria_count',
+      dataIndex: 'criteria_row_count',
+      key: 'criteria_row_count',
     },
     {
       title: 'Total Record Count',
@@ -121,7 +129,7 @@ const DynamicTable = ({ fileArray }) => {
                   <a id={record.name}>Rate JSON</a>
                 </Menu.Item>
                 <Menu.Item key="text">
-                  <a onClick={() => openRateForm(record, 'viewRate')}>Premium Rate</a>
+                  <a onClick={() => openRateForm(record, 'viewRate', criteria_field_Array, "" )}>Premium Rate</a>
                 </Menu.Item>
               </Menu>
             }
@@ -146,7 +154,7 @@ const DynamicTable = ({ fileArray }) => {
         />
         <Button
           type='primary'
-          onClick={() => openRateForm(true, 'upload')}
+          onClick={() => openRateForm(true, 'upload', "", updateCriteria)}
           style={{ position: 'absolute', right: 0 }}
         >
           Upload
@@ -163,27 +171,48 @@ const DynamicTable = ({ fileArray }) => {
   );
 };
 
-const CalculatePremiumForm = ({resetForm}) => {
-  console.log(resetForm);
+const CalculatePremiumForm = ({resetForm, uploadId, criteria_field_Array}) => {
+  console.log(resetForm, criteria_field_Array);
+  const criteria_field_Arrayu = [
+        "product_code",
+        "gender",
+        "tobacco",
+        "product_term",
+        "variant_code",
+        "x-axis",
+        "y-axis"
+  ]
+  const formFieldLabel = (value) => value == "x-axis" ? "Age" : value == "y-axis" ? "PPT" : value.split('_').map(i => i.charAt(0).toUpperCase()+i.slice(1)).join(" ");
   
+  const formField = {
+    gender : "",
+    tobacco : "",
+    productTerm : "",
+    age : "",
+    ppt : "",
+    fromDate : "",
+    varientCode : ""
+  }
   const [premiumPrc, setPremiumPrc] = useState(0);
-  const [form] = Form.useForm();
+  //const [formField, setFormField] = useState(formFieldInitValues);
+  
 
   useEffect(() => {
-    if (resetForm) form.resetFields();
-  },[resetForm,form]);
+    console.log(formField);
+    if (resetForm) return;
+  },[]);
 
   const onFinish = async (values) => {
-    console.log('Success:', values);
+    console.log('Success:', values, "----", formField);
     try {
-      const { gender,tobacco,productTerm, age, ppt, fromDate } = values;
+      const { gender,tobacco,productTerm, age, ppt, fromDate, varientCode } = values;
       const fDate = formatDate(fromDate, 'form-date');
-      const response = await axios.get(`http://localhost:5000/excelupload/single_premium_record?to=${fDate}&age=${age}&ppt=${ppt}&from=${fDate}&gender=${gender}&variant_code=V01&product_term=${productTerm}&tobacco=${tobacco}`)
-      console.log(response);
+      const response = await axios.get(`http://localhost:5000/excelupload/single_premium_record?uploadId=${uploadId}&age=${age}&ppt=${ppt}&from=${fDate}&gender=${gender}&variant_code=${varientCode}&product_term=${productTerm}&tobacco=${tobacco}`)
+      console.log(JSON.parse(JSON.stringify(response)));
       if (response.data.status == "success" && response.data.data) {
         if (response.data.data.premium) setPremiumPrc(response.data.data.premium);
-        else setPremiumPrc("N/A");
       }
+      else setPremiumPrc("N/A");
     } catch (error) {
       console.log(error);
     }
@@ -191,6 +220,29 @@ const CalculatePremiumForm = ({resetForm}) => {
   const onFinishFailed = (errorInfo) => {
     console.log('Failed:', errorInfo);
   };
+
+  const formFields = (criteria_field_Array) => {
+    return criteria_field_Array.map(el => {
+      return (
+        <>
+          <Form.Item
+            label={formFieldLabel(el)}
+            name={el}
+            rules={[
+              {
+                required: true,
+                message: 'This field is required!',
+              },
+            ]}
+          >
+            <Input value={formField[el]}/>
+          </Form.Item>
+        </>
+      )
+    })
+      
+    
+  }
 
   return (
     <>
@@ -212,83 +264,7 @@ const CalculatePremiumForm = ({resetForm}) => {
       onFinishFailed={onFinishFailed}
       autoComplete="off"
     >
-      <Form.Item
-        label="Gender"
-        name="gender"
-        rules={[
-          {
-            required: true,
-            message: 'This field is required!',
-          },
-        ]}
-      >
-        <Input />
-      </Form.Item>
-
-      <Form.Item
-        label="Tobacco"
-        name="tobacco"
-        rules={[
-          {
-            required: true,
-            message: 'This field is required!',
-          },
-        ]}
-      >
-        <Input />
-      </Form.Item>
-
-      <Form.Item
-        label="Product Term"
-        name="productTerm"
-        rules={[
-          {
-            required: true,
-            message: 'This field is required!',
-          },
-        ]}
-      >
-        <Input />
-      </Form.Item>
-
-      <Form.Item
-        label="Age"
-        name="age"
-        rules={[
-          {
-            required: true,
-            message: 'This field is required!',
-          },
-        ]}
-      >
-        <Input />
-      </Form.Item>
-
-      <Form.Item
-        label="PPT"
-        name="ppt"
-        rules={[
-          {
-            required: true,
-            message: 'This field is required!',
-          },
-        ]}
-      >
-        <Input />
-      </Form.Item>
-
-      <Form.Item
-        label="Varient Code"
-        name="varientCode"
-        rules={[
-          {
-            required: true,
-            message: 'This field is required!',
-          },
-        ]}
-      >
-        <Input />
-      </Form.Item>
+      { formFields(criteria_field_Array) }
 
       <Form.Item label="DatePicker" name="fromDate"
         rules={[
@@ -298,7 +274,7 @@ const CalculatePremiumForm = ({resetForm}) => {
           }
         ]}
       >
-          <DatePicker />
+          <DatePicker value={formField.fromDate}/>
       </Form.Item>
 
       <Form.Item
@@ -312,7 +288,7 @@ const CalculatePremiumForm = ({resetForm}) => {
         </Button>
       </Form.Item>
       </Form>
-      <h3 style={{"text-align" : "center", "color" : "#0080ff"}}> {premiumPrc ? `Premium Price is` : ""} &#8377; {premiumPrc ? `${premiumPrc}` : ""}</h3>
+      <h3 style={{"text-align" : "center", "color" : "#0080ff", "display" : `${premiumPrc ? "block" : "none"}`}}> {premiumPrc ? `Premium Price is` : ""} {premiumPrc ? `${premiumPrc}` : ""}</h3>
     </>
   )
 }

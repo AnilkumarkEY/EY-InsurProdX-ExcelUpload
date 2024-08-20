@@ -3,6 +3,7 @@ import { Card, Row, Col, Button, Modal } from 'antd';
 import DynamicTable from './components/table/dynamicTable';
 import axios from 'axios';
 import { formatDate } from './assets/utility/common';
+import { MotifButton } from '@ey-xd/motif-react/components/button/index.js';
 
 const App = () => {
   const [fileArray, setFileArray] = useState([]);
@@ -18,7 +19,7 @@ const App = () => {
       if (response.data && response.data.data.length) {
         const customizedData = response.data.data.map((item)=> {
           return {...item,timestamp: formatDate(item.timestamp, 'display-date-Time')}
-        })
+        }).reverse();
         setFileArray(customizedData)
       }
     } catch (error) {
@@ -32,6 +33,20 @@ const App = () => {
        <Row>
         <Col span={24}>
           <DynamicTable fileArray={fileArray} />
+        </Col>
+        <Col>
+        <div
+          style={{
+            display: 'flex',
+            flexWrap: 'wrap',
+            gap: '6px'
+          }}
+        >
+          <MotifButton onClick={console.log("clicked")
+          }>
+            Text
+          </MotifButton>
+        </div>
         </Col>
        </Row>
     </Card>
