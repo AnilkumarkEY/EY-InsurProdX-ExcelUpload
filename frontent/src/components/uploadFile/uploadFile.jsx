@@ -1,12 +1,13 @@
 import { ChangeEvent, useState } from 'react';
 import { Button, message, Upload } from 'antd';
 import { UploadOutlined } from '@ant-design/icons';
+import envObject from '../../constants/common.js';
 
 const UploadFile = () => {
 
     const props = {
         name: 'file',
-        action: 'https://660d2bd96ddfa2943b33731c.mockapi.io/api/upload',
+        action: `${ envObject.VITE_API_BASE_URL_PROD }excelupload/upload_rate_excel`,
         headers: {
           authorization: 'authorization-text',
         },

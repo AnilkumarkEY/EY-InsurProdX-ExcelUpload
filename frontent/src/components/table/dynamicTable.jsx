@@ -3,11 +3,13 @@ import { Space, Table, Input, Button, Modal, Dropdown, Menu, Form, DatePicker } 
 import UploadFile from '../uploadFile/uploadFile';
 import axios from 'axios';
 import { formatDate } from '../../assets/utility/common';
+import envObject from '../../constants/common';
+
 
 const { Search } = Input;
 const styleAction1 = {
-  "font-weight": "700",
-  "font-size": "19px",
+  "fontWeight": "700",
+  "fontSize": "19px",
   "position": "relative",
   "bottom": "-10px"
 };
@@ -23,6 +25,7 @@ const DynamicTable = ({ fileArray }) => {
   const [modalContent, setModalContent] = useState(null);
   const [modalTitle, setModalTitle] = useState('');
   const [resetForm, setResetForm] = useState(false);
+  
 
   useEffect(() => {
     const data = fileArray
@@ -44,7 +47,7 @@ const DynamicTable = ({ fileArray }) => {
 
   const handleDownload = async(e, record) => {
     try {
-      const res = await axios.get(`http://localhost:5000/excelupload/get_all_transform_record?uploadId=${record.summeryDataId}`)
+      const res = await axios.get(`${ envObject.VITE_API_BASE_URL_PROD }excelupload/get_all_transform_record?uploadId=${record.summeryDataId}`)
       if (res.data.status && res.data.status == 'success') {
         const jsonString = JSON.stringify(res.data.data);
         const blob = new Blob([jsonString], { type: "application/json" });
@@ -61,7 +64,7 @@ const DynamicTable = ({ fileArray }) => {
   const openRateForm = (record, type) => {
     if (type == 'viewRate') {
       setModalTitle('View Premium Rate')
-      setModalContent(<CalculatePremiumForm resetForm={true}/>);
+      setModalContent(<CalculatePremiumForm resetForm={true} uploadID={record.summeryDataId}/>);
     } else {
       setModalTitle('Upload Excel File Here')
       setModalContent(<UploadFile />);
@@ -71,10 +74,12 @@ const DynamicTable = ({ fileArray }) => {
 
   const handleOk = () => {
     setIsModalOpen(false);
+    //window.location.reload();
   };
 
   const handleCancel = () => {
     setIsModalOpen(false);
+    //window.location.reload();
   };
 
   const columns = [
@@ -163,9 +168,7 @@ const DynamicTable = ({ fileArray }) => {
   );
 };
 
-const CalculatePremiumForm = ({resetForm}) => {
-  console.log(resetForm);
-  
+const CalculatePremiumForm = ({resetForm, uploadID}) => {
   const [premiumPrc, setPremiumPrc] = useState(0);
   const [form] = Form.useForm();
 
@@ -176,14 +179,14 @@ const CalculatePremiumForm = ({resetForm}) => {
   const onFinish = async (values) => {
     console.log('Success:', values);
     try {
-      const { gender,tobacco,productTerm, age, ppt, fromDate } = values;
+      const { gender,tobacco,productTerm, age, ppt, fromDate, varientCode } = values;
       const fDate = formatDate(fromDate, 'form-date');
-      const response = await axios.get(`http://localhost:5000/excelupload/single_premium_record?to=${fDate}&age=${age}&ppt=${ppt}&from=${fDate}&gender=${gender}&variant_code=V01&product_term=${productTerm}&tobacco=${tobacco}`)
+      const response = await axios.get(`${ envObject.VITE_API_BASE_URL_PROD }excelupload/single_premium_record?age=${age}&ppt=${ppt}&from=${fDate}&gender=${gender}&variant_code=${varientCode}&product_term=${productTerm}&tobacco=${tobacco}&uploadId=${uploadID}`)
       console.log(response);
       if (response.data.status == "success" && response.data.data) {
         if (response.data.data.premium) setPremiumPrc(response.data.data.premium);
-        else setPremiumPrc("N/A");
       }
+      else setPremiumPrc("N/A");
     } catch (error) {
       console.log(error);
     }
@@ -312,7 +315,7 @@ const CalculatePremiumForm = ({resetForm}) => {
         </Button>
       </Form.Item>
       </Form>
-      <h3 style={{"text-align" : "center", "color" : "#0080ff"}}> {premiumPrc ? `Premium Price is` : ""} &#8377; {premiumPrc ? `${premiumPrc}` : ""}</h3>
+      <h3 style={{"text-align" : "center", "color" : "#0080ff"}}> {premiumPrc ? `Premium Price is` : ""} {premiumPrc ? `${premiumPrc}` : ""}</h3>
     </>
   )
 }
