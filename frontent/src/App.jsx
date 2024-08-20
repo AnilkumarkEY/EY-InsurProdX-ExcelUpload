@@ -10,8 +10,6 @@ const App = () => {
   const [fileArray, setFileArray] = useState([]);
 
   useEffect(() => {
-    //console.log(API);
-    
     getGridData();
   },[])
 
@@ -21,7 +19,7 @@ const App = () => {
       if (response.data && response.data.data.length) {
         const customizedData = response.data.data.map((item)=> {
           return {...item,timestamp: formatDate(item.timestamp, 'display-date-Time')}
-        })
+        }).reverse();
         setFileArray(customizedData)
       }
     } catch (error) {

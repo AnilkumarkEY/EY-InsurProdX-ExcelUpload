@@ -74,12 +74,12 @@ const DynamicTable = ({ fileArray }) => {
 
   const handleOk = () => {
     setIsModalOpen(false);
-    //window.location.reload();
+    window.location.reload();
   };
 
   const handleCancel = () => {
     setIsModalOpen(false);
-    //window.location.reload();
+    window.location.reload();
   };
 
   const columns = [
