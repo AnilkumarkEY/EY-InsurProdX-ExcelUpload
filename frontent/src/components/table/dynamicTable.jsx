@@ -168,29 +168,51 @@ const DynamicTable = ({ fileArray }) => {
   );
 };
 
-const CalculatePremiumForm = ({resetForm, uploadID}) => {
+const generateLabel = (val) => {
+  return val == "x-axis" ? "Age" : val == "y-axis" ? "PPT" : val.split("_").map(i => i.charAt(0).toUpperCase() + i.slice(1)).join(" ")
+}
+
+const CalculatePremiumForm = ({ resetForm, uploadID }) => {
   const [premiumPrc, setPremiumPrc] = useState(0);
-  const [form] = Form.useForm();
+  const [criteriaFields, setCriteriaFields] = useState([]);
 
   useEffect(() => {
-    if (resetForm) form.resetFields();
-  },[resetForm,form]);
+    const fetchCriteriaFields = async () => {
+      try {
+        const response = await axios.get(`${import.meta.env.VITE_API_BASE_URL_PROD}excelupload/get_criteria_fields?summeryDataId=${uploadID}`);
+        if (response.data && response.data.status === "success") {
+          const { data } = response.data;
+          const criteriaFieldsArray = data.filter(i => !["$__","$isNew","_doc","rate_id","effective_from","effective_to"].includes(i));
+          setCriteriaFields(criteriaFieldsArray);
+        }
+      } catch (error) {
+        console.error("Error fetching criteria fields:", error);
+      }
+    };
+
+    fetchCriteriaFields();
+  }, [uploadID]);
 
   const onFinish = async (values) => {
     console.log('Success:', values);
     try {
-      const { gender,tobacco,productTerm, age, ppt, fromDate, varientCode } = values;
+      const { gender, tobacco, product_term, fromDate, variant_code } = values;
+      const age = values["x-axis"];
+      const ppt = values["y-axis"];
       const fDate = formatDate(fromDate, 'form-date');
-      const response = await axios.get(`${ envObject.VITE_API_BASE_URL_PROD }excelupload/single_premium_record?age=${age}&ppt=${ppt}&from=${fDate}&gender=${gender}&variant_code=${varientCode}&product_term=${productTerm}&tobacco=${tobacco}&uploadId=${uploadID}`)
+      const response = await axios.get(`${import.meta.env.VITE_API_BASE_URL_PROD}excelupload/single_premium_record?age=${age}&ppt=${ppt}&from=${fDate}&gender=${gender}&variant_code=${variant_code}&product_term=${product_term}&tobacco=${tobacco}&uploadId=${uploadID}`);
       console.log(response);
-      if (response.data.status == "success" && response.data.data) {
+      if (response.data.status === "success" && response.data.data) {
         if (response.data.data.premium) setPremiumPrc(response.data.data.premium);
+      } else {
+        setPremiumPrc("N/A");
       }
-      else setPremiumPrc("N/A");
     } catch (error) {
-      console.log(error);
+      console.error("Error fetching premium record:", error);
+      setPremiumPrc("N/A");
     }
   };
+
   const onFinishFailed = (errorInfo) => {
     console.log('Failed:', errorInfo);
   };
@@ -198,127 +220,50 @@ const CalculatePremiumForm = ({resetForm, uploadID}) => {
   return (
     <>
       <Form
-      name="basic"
-      labelCol={{
-        span: 8,
-      }}
-      wrapperCol={{
-        span: 16,
-      }}
-      style={{
-        maxWidth: 600,
-      }}
-      initialValues={{
-        remember: true,
-      }}
-      onFinish={onFinish}
-      onFinishFailed={onFinishFailed}
-      autoComplete="off"
-    >
-      <Form.Item
-        label="Gender"
-        name="gender"
-        rules={[
-          {
-            required: true,
-            message: 'This field is required!',
-          },
-        ]}
+        name="basic"
+        labelCol={{ span: 8 }}
+        wrapperCol={{ span: 16 }}
+        style={{ maxWidth: 600 }}
+        initialValues={{ remember: true }}
+        onFinish={onFinish}
+        onFinishFailed={onFinishFailed}
+        autoComplete="off"
       >
-        <Input />
-      </Form.Item>
+        {/* Optionally handle form reset if required */}
+        {/* {resetForm && form.resetFields()} */}
+        {criteriaFields.map(item => (
+          <Form.Item
+            key={item}
+            label={generateLabel(item)}
+            name={item}
+            rules={[{ required: true, message: 'This field is required!' }]}
+          >
+            <Input />
+          </Form.Item>
+        ))}
 
-      <Form.Item
-        label="Tobacco"
-        name="tobacco"
-        rules={[
-          {
-            required: true,
-            message: 'This field is required!',
-          },
-        ]}
-      >
-        <Input />
-      </Form.Item>
-
-      <Form.Item
-        label="Product Term"
-        name="productTerm"
-        rules={[
-          {
-            required: true,
-            message: 'This field is required!',
-          },
-        ]}
-      >
-        <Input />
-      </Form.Item>
-
-      <Form.Item
-        label="Age"
-        name="age"
-        rules={[
-          {
-            required: true,
-            message: 'This field is required!',
-          },
-        ]}
-      >
-        <Input />
-      </Form.Item>
-
-      <Form.Item
-        label="PPT"
-        name="ppt"
-        rules={[
-          {
-            required: true,
-            message: 'This field is required!',
-          },
-        ]}
-      >
-        <Input />
-      </Form.Item>
-
-      <Form.Item
-        label="Varient Code"
-        name="varientCode"
-        rules={[
-          {
-            required: true,
-            message: 'This field is required!',
-          },
-        ]}
-      >
-        <Input />
-      </Form.Item>
-
-      <Form.Item label="DatePicker" name="fromDate"
-        rules={[
-          {
-            required : true,
-            message : 'This field is required!'
-          }
-        ]}
-      >
+        <Form.Item
+          label="For Date"
+          name="fromDate"
+          rules={[{ required: true, message: 'This field is required!' }]}
+        >
           <DatePicker />
-      </Form.Item>
+        </Form.Item>
 
-      <Form.Item
-        wrapperCol={{
-          offset: 8,
-          span: 16,
-        }}
-      >
-        <Button type="primary" htmlType="submit">
-          Get Premium Price
-        </Button>
-      </Form.Item>
+        <Form.Item
+          wrapperCol={{ offset: 8, span: 16 }}
+        >
+          <Button type="primary" htmlType="submit">
+            Get Premium Price
+          </Button>
+        </Form.Item>
       </Form>
-      <h3 style={{"text-align" : "center", "color" : "#0080ff"}}> {premiumPrc ? `Premium Price is` : ""} {premiumPrc ? `${premiumPrc}` : ""}</h3>
+      <h3 style={{ textAlign: "center", color: "#0080ff" }}>
+        {premiumPrc ? `Premium Price is ${premiumPrc}` : ""}
+      </h3>
     </>
-  )
-}
+  );
+};
 
 const DynamicModal = ({ component, showModal, handleOk, handleCancel, title }) => {
   return (
